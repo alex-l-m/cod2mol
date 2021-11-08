@@ -76,7 +76,8 @@ for line in sys.stdin:
                 component_coordinates[edge[1]] = \
                     component_coordinates[edge[0]] + displacement
                 edge_lengths[edge] = np.linalg.norm(displacement)
-            molecule = Molecule(list(component_coordinates.keys()),
+            element_symbols = [re.match("[A-Z][a-z]?", i).group(0) for i in component_coordinates.keys()]
+            molecule = Molecule(element_symbols,
                 # The coordinate vectors have too many dimensions; flatten them
                 list(i.flatten() for i in component_coordinates.values()))
 
