@@ -13,6 +13,14 @@ from pymatgen.util.coord import pbc_shortest_vectors
 import networkx as nx
 from networkx.algorithms.traversal.breadth_first_search import bfs_edges
 
+# Check if it is possible to search the Cambridge Structural Database, which
+# requires that the user have a license
+csd_available = True
+try:
+    import ccdc
+except ModuleNotFoundError:
+    csd_available = False
+
 # A regular expression for recognizing element symbols at the beginning of
 # strings, which represent metals 
 metals = ["Ir", "Pt"]
@@ -23,9 +31,17 @@ for line in sys.stdin:
     # Retrieve Crystallography Open Database entry ID numbers for all entries
     # associated with the given doi by searching the database
     downloader = COD()
-    print("Looking up ids for doi {}".format(doi))
+    print("Searching COD for entries with doi {}".format(doi))
     sql_request = "select file from data where DOI like '{}'".format(doi)
     structure_ids = [int(i) for i in downloader.query(sql_request).split()[1:]]
+
+    # Try downloading from CSD if nothing was available from COD
+    if len(structure_ids) == 0:
+        print("Nothing found on COD.")
+        if csd_available:
+            print("Searching CSD for entries with doi {}".format(doi))
+            csd_query = ccdc.search.TextNumericSearch()
+            csd_query.add_doi(doi)
 
     for structure_id in structure_ids:
         print("Downloading structure {}".format(structure_id))
