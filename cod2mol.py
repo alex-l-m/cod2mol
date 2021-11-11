@@ -22,6 +22,12 @@ csd_available = True
 try:
     import ccdc
 except ModuleNotFoundError:
+    print("ccdc module not installed, will only query COD")
+    csd_available = False
+except RuntimeError:
+    # If the user has the ccdc module installed but does not have a license, it
+    # will produce a RuntimeError
+    print("ccdc module is installed but license may not be available, will only query COD")
     csd_available = False
 
 # A regular expression for recognizing element symbols at the beginning of
