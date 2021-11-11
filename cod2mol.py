@@ -1,8 +1,10 @@
+import os
 import sys
 import re
 import requests
 import numpy as np
 from slugify import slugify
+from openbabel import pybel
 from pymatgen.ext.cod import COD
 from pymatgen.core import Structure
 from pymatgen.core import Molecule
@@ -34,14 +36,6 @@ for line in sys.stdin:
     print("Searching COD for entries with doi {}".format(doi))
     sql_request = "select file from data where DOI like '{}'".format(doi)
     structure_ids = [int(i) for i in downloader.query(sql_request).split()[1:]]
-
-    # Try downloading from CSD if nothing was available from COD
-    if len(structure_ids) == 0:
-        print("Nothing found on COD.")
-        if csd_available:
-            print("Searching CSD for entries with doi {}".format(doi))
-            csd_query = ccdc.search.TextNumericSearch()
-            csd_query.add_doi(doi)
 
     for structure_id in structure_ids:
         print("Downloading structure {}".format(structure_id))
@@ -92,7 +86,8 @@ for line in sys.stdin:
                 component_coordinates[edge[1]] = \
                     component_coordinates[edge[0]] + displacement
                 edge_lengths[edge] = np.linalg.norm(displacement)
-            element_symbols = [re.match("[A-Z][a-z]?", i).group(0) for i in component_coordinates.keys()]
+            element_symbols = [re.match("[A-Z][a-z]?", i).group(0) \
+                for i in component_coordinates.keys()]
             molecule = Molecule(element_symbols,
                 # The coordinate vectors have too many dimensions; flatten them
                 list(i.flatten() for i in component_coordinates.values()))
@@ -102,3 +97,28 @@ for line in sys.stdin:
 
             # Write a single molecule from the crystal as an output xyz file
             XYZ(molecule).write_file(outfile_name)
+
+    # Try downloading from CSD if nothing was available from COD
+    if len(structure_ids) == 0:
+        print("Nothing found on COD.")
+        if csd_available:
+            print("Searching CSD for entries with doi {}".format(doi))
+            csd_query = ccdc.search.TextNumericSearch()
+            csd_query.add_doi(doi)
+            with ccdc.io.MoleculeReader("CSD") as csd_reader:
+                for hit in csd_query:
+                    structure_id = hit.identifier
+                    molecule_entry = csd_reader(structure_id)
+                    for i, component in enumerate(molecule_entry.components):
+                        outfile_base = slugify("doi_{}_entry_{}_molecule_{}".\
+                            format(doi, structure_id, i))
+                        outfile_name = outfile_base + ".xyz"
+                        # I don't know how to output in xyz, so save as mol2
+                        # then convert to xyz
+                        outfile_temp = outfile_base + ".mol2"
+                        with ccdc.io.MoleculeWriter(outfile_temp) as writer:
+                            writer.write(component)
+                        obabel_mol = pybel.readfile("mol2", outfile_temp)
+                        os.remove(outfile_temp)
+                        next(obabel_mol).write("xyz", outfile_name)
+
