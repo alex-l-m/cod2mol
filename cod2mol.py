@@ -44,6 +44,19 @@ def query_executor(cursor, doi):
     
     structure_ids = [i[0] for i in list(cursor.fetchall())]
     return structure_ids
+
+def obabel_convert(outfile_base, format_a, format_b):
+    # I don't know how to output in mol, so save as xyz
+    # then convert to mol
+    outfile_temp = outfile_base + "." + format_a
+    outfile_name = outfile_base + "." + format_b
+    # Iterating over the "readfile" output seems to cause OSErrors on
+    # Windows due to the file not being closed. Therefore, read the
+    # whole iterator as a list without storing a reference to the
+    # readfile output:
+    obabel_mol = list(pybel.readfile(format_a, outfile_temp))[0]
+    obabel_mol.write(format_b, outfile_name)
+    os.remove(outfile_temp)
     
 for line in sys.stdin:
     doi = line.strip()
@@ -113,20 +126,8 @@ for line in sys.stdin:
 
             outfile_base = slugify("doi_{}_entry_{}_molecule_{}".\
                 format(doi, structure_id, structure_id))
-            # Write a single molecule from the crystal as an output xyz file
-            # I don't know how to output in mol, so save as xyz
-            # then convert to mol
-            outfile_temp = outfile_base + ".xyz"
-            outfile_name = outfile_base + ".mol"
-            XYZ(molecule).write_file(outfile_temp)
-            # Iterating over the "readfile" output seems to cause OSErrors on
-            # Windows due to the file not being closed. Therefore, read the
-            # whole iterator as a list without storing a reference to the
-            # readfile output:
-            obabel_mol = list(pybel.readfile("xyz", outfile_temp))[0]
-            obabel_mol.write("mol", outfile_name)
-            os.remove(outfile_temp)
-
+            XYZ(molecule).write_file(outfile_base + ".xyz")
+            obabel_convert(outfile_base, "xyz", "mol")
 
     # Try downloading from CSD if nothing was available from COD
     if len(structure_ids) == 0:
@@ -142,13 +143,6 @@ for line in sys.stdin:
                     for i, component in enumerate(molecule_entry.components):
                         outfile_base = slugify("doi_{}_entry_{}_molecule_{}".\
                             format(doi, structure_id, i))
-                        outfile_name = outfile_base + ".xyz"
-                        # I don't know how to output in xyz, so save as mol2
-                        # then convert to xyz
-                        outfile_temp = outfile_base + ".mol2"
-                        with ccdc.io.MoleculeWriter(outfile_temp) as writer:
+                        with ccdc.io.MoleculeWriter(outfile_base + ".mol2") as writer:
                             writer.write(component)
-                        obabel_mol = pybel.readfile("mol2", outfile_temp)
-                        next(obabel_mol).write("xyz", outfile_name)
-                        os.remove(outfile_temp)
-
+                        obabel_convert(outfile_base, "mol2", "mol")
