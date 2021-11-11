@@ -119,8 +119,12 @@ for line in sys.stdin:
             outfile_temp = outfile_base + ".xyz"
             outfile_name = outfile_base + ".mol"
             XYZ(molecule).write_file(outfile_temp)
-            obabel_mol = pybel.readfile("xyz", outfile_temp)
-            next(obabel_mol).write("mol", outfile_name)
+            # Iterating over the "readfile" output seems to cause OSErrors on
+            # Windows due to the file not being closed. Therefore, read the
+            # whole iterator as a list without storing a reference to the
+            # readfile output:
+            obabel_mol = list(pybel.readfile("xyz", outfile_temp))[0]
+            obabel_mol.write("mol", outfile_name)
             os.remove(outfile_temp)
 
 
