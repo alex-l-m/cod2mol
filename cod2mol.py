@@ -14,6 +14,7 @@ from pymatgen.io.xyz import XYZ
 from pymatgen.util.coord import pbc_shortest_vectors
 import networkx as nx
 from networkx.algorithms.traversal.breadth_first_search import bfs_edges
+import pymysql
 
 # Check if it is possible to search the Cambridge Structural Database, which
 # requires that the user have a license
@@ -28,21 +29,33 @@ except ModuleNotFoundError:
 metals = ["Ir", "Pt"]
 metal_re = "(" + "|".join(metals) + ")"
 
+url = "www.crystallography.net"
+
+
+def query_executor(cursor, doi):
+    sql = 'select file from data where DOI like %s'
+    cursor.execute(sql, (doi))
+    
+    structure_ids = [i[0] for i in list(cursor.fetchall())]
+    return structure_ids
+    
 for line in sys.stdin:
     doi = line.strip()
     # Retrieve Crystallography Open Database entry ID numbers for all entries
     # associated with the given doi by searching the database
-    downloader = COD()
+    mysql_con = pymysql.connect(host=url, user="cod_reader", db="cod")
+    mysql_cursor = mysql_con.cursor()
+    
+    print("Looking up ids for doi {}".format(doi))
     print("Searching COD for entries with doi {}".format(doi))
-    sql_request = "select file from data where DOI like '{}'".format(doi)
-    structure_ids = [int(i) for i in downloader.query(sql_request).split()[1:]]
+    structure_ids = query_executor(mysql_cursor, doi)
 
     for structure_id in structure_ids:
         print("Downloading structure {}".format(structure_id))
         # Download any cif files associated with the doi from the Crystallography Open
         # Database. 
         cif_text = \
-            requests.get("http://{}/cod/{}.cif".format(downloader.url, structure_id)).text
+            requests.get("http://{}/cod/{}.cif".format(url, structure_id)).text
         # Parse the cif file using pymatgen's cif parser
         parsed_cif = CifParser.from_string(cif_text)
         entries = list(parsed_cif._cif.data.keys())
