@@ -111,11 +111,18 @@ for line in sys.stdin:
                 # The coordinate vectors have too many dimensions; flatten them
                 list(i.flatten() for i in component_coordinates.values()))
 
-            outfile_name = slugify("doi_{}_entry_{}_molecule_{}".\
-                format(doi, structure_id, metal_name)) + ".xyz"
-
+            outfile_base = slugify("doi_{}_entry_{}_molecule_{}".\
+                format(doi, structure_id, structure_id))
             # Write a single molecule from the crystal as an output xyz file
-            XYZ(molecule).write_file(outfile_name)
+            # I don't know how to output in mol, so save as xyz
+            # then convert to mol
+            outfile_temp = outfile_base + ".xyz"
+            outfile_name = outfile_base + ".mol"
+            XYZ(molecule).write_file(outfile_temp)
+            obabel_mol = pybel.readfile("xyz", outfile_temp)
+            next(obabel_mol).write("mol", outfile_name)
+            os.remove(outfile_temp)
+
 
     # Try downloading from CSD if nothing was available from COD
     if len(structure_ids) == 0:
@@ -138,6 +145,6 @@ for line in sys.stdin:
                         with ccdc.io.MoleculeWriter(outfile_temp) as writer:
                             writer.write(component)
                         obabel_mol = pybel.readfile("mol2", outfile_temp)
-                        os.remove(outfile_temp)
                         next(obabel_mol).write("xyz", outfile_name)
+                        os.remove(outfile_temp)
 
