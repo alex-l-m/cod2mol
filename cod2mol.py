@@ -130,7 +130,7 @@ for line in sys.stdin:
                 list(i.flatten() for i in component_coordinates.values()))
 
             outfile_base = slugify("doi_{}_entry_{}_molecule_{}".\
-                format(doi, structure_id, structure_id))
+                format(doi, structure_id, metal_name))
             XYZ(molecule).write_file(outfile_base + ".xyz")
             obabel_convert(outfile_base, "xyz", "mol")
             output_table.writerow([doi, "COD", structure_id, metal_name, outfile_base + ".mol"])
