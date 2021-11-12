@@ -3,6 +3,7 @@ import sys
 import re
 import requests
 import numpy as np
+import csv
 from slugify import slugify
 from openbabel import pybel
 from pymatgen.ext.cod import COD
@@ -58,6 +59,10 @@ def obabel_convert(outfile_base, format_a, format_b):
     obabel_mol.write(format_b, outfile_name)
     os.remove(outfile_temp)
     
+output_table_file = open("output_table.csv", "w")
+output_table = csv.writer(output_table_file)
+output_table.writerow(["doi", "database", "entry", "molecule", "filename"])
+
 for line in sys.stdin:
     doi = line.strip()
     # Retrieve Crystallography Open Database entry ID numbers for all entries
@@ -128,6 +133,7 @@ for line in sys.stdin:
                 format(doi, structure_id, structure_id))
             XYZ(molecule).write_file(outfile_base + ".xyz")
             obabel_convert(outfile_base, "xyz", "mol")
+            output_table.writerow([doi, "COD", structure_id, metal_name, outfile_base + ".mol"])
 
     # Try downloading from CSD if nothing was available from COD
     if len(structure_ids) == 0:
@@ -146,3 +152,5 @@ for line in sys.stdin:
                         with ccdc.io.MoleculeWriter(outfile_base + ".mol2") as writer:
                             writer.write(component)
                         obabel_convert(outfile_base, "mol2", "mol")
+                        output_table.writerow([doi, "COD", structure_id,
+                            i, outfile_base + ".mol"])
