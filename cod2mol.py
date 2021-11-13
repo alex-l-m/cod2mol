@@ -88,10 +88,14 @@ for line in sys.stdin:
 
         # Make a graph using the bonding information in the cif file
         bonding_graph = nx.empty_graph()
-        for atom1, atom2 in zip(\
-            parsed_cif._cif.data[entry].data["_geom_bond_atom_site_label_1"],
-            parsed_cif._cif.data[entry].data["_geom_bond_atom_site_label_2"]):
-            bonding_graph.add_edge(atom1, atom2)
+        try:
+            for atom1, atom2 in zip(\
+                parsed_cif._cif.data[entry].data["_geom_bond_atom_site_label_1"],
+                parsed_cif._cif.data[entry].data["_geom_bond_atom_site_label_2"]):
+                bonding_graph.add_edge(atom1, atom2)
+        except KeyError:
+            print("No bonding information in cif file")
+            continue
 
         # Create a pymatgen structure object from the cif file
         data = parsed_cif._cif.data[entry].data
@@ -154,3 +158,5 @@ for line in sys.stdin:
                         obabel_convert(outfile_base, "mol2", "mol")
                         output_table.writerow([doi, "COD", structure_id,
                             i, outfile_base + ".mol"])
+
+output_table_file.close()
