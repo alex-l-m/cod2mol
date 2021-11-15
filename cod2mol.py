@@ -1,9 +1,11 @@
 import csv
 import os
+import os.path
 import sys
 import re
 import requests
 import numpy as np
+import pandas as pd
 from slugify import slugify
 from openbabel import pybel
 from pymatgen.core import Structure
@@ -70,11 +72,16 @@ def obabel_convert(outfile_base, format_a, format_b):
 # Newline argument to prevent empty lines
 # Following suggestion in this stackoverflow answer:
 # https://stackoverflow.com/a/3348664/4434502
-output_table_file = open("output_table.csv", "w", newline = "")
+if os.path.isfile("output_table.csv"):
+    doi_seen = set(pd.read_csv("output_table.csv").doi.tolist())
+    output_table_file = open("output_table.csv", "a", newline = "")
+else:
+    doi_seen = set()
+    output_table_file = open("output_table.csv", "w", newline = "")
+
 output_table = csv.writer(output_table_file)
 output_table.writerow(["doi", "database", "entry", "molecule", "filename"])
 
-doi_seen = set()
 for line in sys.stdin:
     # DOI regex from:
     # https://www.crossref.org/blog/dois-and-matching-regular-expressions/
