@@ -75,12 +75,12 @@ def obabel_convert(outfile_base, format_a, format_b):
 if os.path.isfile("output_table.csv"):
     doi_seen = set(pd.read_csv("output_table.csv").doi.tolist())
     output_table_file = open("output_table.csv", "a", newline = "")
+    output_table = csv.writer(output_table_file)
 else:
     doi_seen = set()
     output_table_file = open("output_table.csv", "w", newline = "")
-
-output_table = csv.writer(output_table_file)
-output_table.writerow(["doi", "database", "entry", "molecule", "filename"])
+    output_table = csv.writer(output_table_file)
+    output_table.writerow(["doi", "database", "entry", "molecule", "filename"])
 
 for line in sys.stdin:
     # DOI regex from:
