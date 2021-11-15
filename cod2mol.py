@@ -22,6 +22,8 @@ import pymysql
 csd_available = True
 try:
     import ccdc
+    import ccdc.search
+    import ccdc.io
 except ModuleNotFoundError:
     print("ccdc module not installed, will only query COD")
     csd_available = False
