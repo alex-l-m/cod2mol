@@ -61,7 +61,10 @@ def obabel_convert(outfile_base, format_a, format_b):
     obabel_mol.write(format_b, outfile_name)
     os.remove(outfile_temp)
     
-output_table_file = open("output_table.csv", "w")
+# Newline argument to prevent empty lines
+# Following suggestion in this stackoverflow answer:
+# https://stackoverflow.com/a/3348664/4434502
+output_table_file = open("output_table.csv", "w", newline = "")
 output_table = csv.writer(output_table_file)
 output_table.writerow(["doi", "database", "entry", "molecule", "filename"])
 
