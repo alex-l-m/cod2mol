@@ -1,12 +1,11 @@
+import csv
 import os
 import sys
 import re
 import requests
 import numpy as np
-import csv
 from slugify import slugify
 from openbabel import pybel
-from pymatgen.ext.cod import COD
 from pymatgen.core import Structure
 from pymatgen.core import Molecule
 from pymatgen.io.cif import CifParser
@@ -34,7 +33,7 @@ except RuntimeError:
     csd_available = False
 
 # A regular expression for recognizing element symbols at the beginning of
-# strings, which represent metals 
+# strings, which represent metals
 metals = ["Ir", "Pt"]
 metal_re = "(" + "|".join(metals) + ")"
 
@@ -44,7 +43,7 @@ url = "www.crystallography.net"
 def query_executor(cursor, doi):
     sql = 'select file from data where DOI like %s'
     cursor.execute(sql, (doi))
-    
+
     structure_ids = [i[0] for i in list(cursor.fetchall())]
     return structure_ids
 
@@ -60,7 +59,7 @@ def obabel_convert(outfile_base, format_a, format_b):
     obabel_mol = list(pybel.readfile(format_a, outfile_temp))[0]
     obabel_mol.write(format_b, outfile_name)
     os.remove(outfile_temp)
-    
+
 # Newline argument to prevent empty lines
 # Following suggestion in this stackoverflow answer:
 # https://stackoverflow.com/a/3348664/4434502
@@ -87,7 +86,7 @@ for line in sys.stdin:
     # associated with the given doi by searching the database
     mysql_con = pymysql.connect(host=url, user="cod_reader", db="cod")
     mysql_cursor = mysql_con.cursor()
-    
+
     print("Looking up ids for doi {}".format(doi))
     print("Searching COD for entries with doi {}".format(doi))
     structure_ids = query_executor(mysql_cursor, doi)
@@ -95,7 +94,7 @@ for line in sys.stdin:
     for structure_id in structure_ids:
         print("Downloading structure {}".format(structure_id))
         # Download any cif files associated with the doi from the Crystallography Open
-        # Database. 
+        # Database.
         cif_text = \
             requests.get("http://{}/cod/{}.cif".format(url, structure_id)).text
         # Parse the cif file using pymatgen's cif parser
