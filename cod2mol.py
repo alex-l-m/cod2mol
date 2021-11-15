@@ -55,8 +55,15 @@ def obabel_convert(outfile_base, format_a, format_b):
     # Iterating over the "readfile" output seems to cause OSErrors on
     # Windows due to the file not being closed. Therefore, read the
     # whole iterator as a list without storing a reference to the
-    # readfile output:
-    obabel_mol = list(pybel.readfile(format_a, outfile_temp))[0]
+    # readfile output
+    obabel_mols = list(pybel.readfile(format_a, outfile_temp))
+    # 1169841 on CSD seems to have no coordinates in the entry. In this case,
+    # the list will be empty
+    try:
+        obabel_mol = obabel_mols[0]
+    except IndexError:
+        print("OpenBabel did not find a molecule")
+        return
     obabel_mol.write(format_b, outfile_name)
     os.remove(outfile_temp)
 
