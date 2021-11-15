@@ -65,8 +65,21 @@ output_table_file = open("output_table.csv", "w")
 output_table = csv.writer(output_table_file)
 output_table.writerow(["doi", "database", "entry", "molecule", "filename"])
 
+doi_seen = set()
 for line in sys.stdin:
-    doi = line.strip()
+    # DOI regex from:
+    # https://www.crossref.org/blog/dois-and-matching-regular-expressions/
+    # Modified to make case insensitive
+    doi_match = re.search(r"10.\d{4,9}/[-._;()/:A-Za-z0-9]+", line)
+    if doi_match is None:
+        print("No DOI found in input {}".format(line.strip()))
+    doi = doi_match.group(0)
+
+    # Don't download entries for the same paper twice
+    if doi in doi_seen:
+        continue
+    doi_seen.add(doi)
+
     # Retrieve Crystallography Open Database entry ID numbers for all entries
     # associated with the given doi by searching the database
     mysql_con = pymysql.connect(host=url, user="cod_reader", db="cod")
@@ -158,7 +171,7 @@ for line in sys.stdin:
                         with ccdc.io.MoleculeWriter(outfile_base + ".mol2") as writer:
                             writer.write(component)
                         obabel_convert(outfile_base, "mol2", "mol")
-                        output_table.writerow([doi, "COD", structure_id,
+                        output_table.writerow([doi, "CSD", structure_id,
                             i, outfile_base + ".mol"])
 
 output_table_file.close()
