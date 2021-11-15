@@ -149,7 +149,7 @@ for line in sys.stdin:
             csd_query = ccdc.search.TextNumericSearch()
             csd_query.add_doi(doi)
             with ccdc.io.MoleculeReader("CSD") as csd_reader:
-                for hit in csd_query:
+                for hit in csd_query.search():
                     structure_id = hit.identifier
                     molecule_entry = csd_reader(structure_id)
                     for i, component in enumerate(molecule_entry.components):
