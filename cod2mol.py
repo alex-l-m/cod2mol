@@ -66,7 +66,7 @@ def obabel_convert(outfile_base, format_a, format_b):
     except IndexError:
         print("OpenBabel did not find a molecule")
         return
-    obabel_mol.write(format_b, outfile_name)
+    obabel_mol.write(format_b, outfile_name, overwrite = True)
     os.remove(outfile_temp)
 
 # Newline argument to prevent empty lines
@@ -105,6 +105,9 @@ for line in sys.stdin:
     print("Searching COD for entries with doi {}".format(doi))
     structure_ids = query_executor(mysql_cursor, doi)
 
+    # Buffer for rows in the output table, only to be written after every entry
+    # in this doi is downloaded
+    row_buffer = []
     for structure_id in structure_ids:
         print("Downloading structure {}".format(structure_id))
         # Download any cif files associated with the doi from the Crystallography Open
@@ -174,7 +177,8 @@ for line in sys.stdin:
             obabel_convert(outfile_base, "xyz", "mol")
             # Add row to a buffer, so that if the script is interrupted between
             # entries, it won't skip this entire doi
-            output_table.writerow([doi, "COD", structure_id, metal_name, outfile_base + ".mol"])
+            row_buffer.append([doi, "COD", structure_id, metal_name, outfile_base + ".mol"])
+
 
     # Try downloading from CSD if nothing was available from COD
     if len(structure_ids) == 0:
@@ -186,6 +190,8 @@ for line in sys.stdin:
             with ccdc.io.MoleculeReader("CSD") as csd_reader:
                 for hit in csd_query.search():
                     structure_id = hit.identifier
+                    # This is really just so it can remember later that it found something
+                    structure_ids.append(structure_id)
                     molecule_entry = csd_reader.molecule(structure_id)
                     for i, component in enumerate(molecule_entry.components):
                         outfile_base = slugify("doi_{}_entry_{}_molecule_{}".\
@@ -193,7 +199,14 @@ for line in sys.stdin:
                         with ccdc.io.MoleculeWriter(outfile_base + ".mol2") as writer:
                             writer.write(component)
                         obabel_convert(outfile_base, "mol2", "mol")
-                        output_table.writerow([doi, "CSD", structure_id,
+                        row_buffer.append([doi, "CSD", structure_id,
                             i, outfile_base + ".mol"])
+
+    if len(structure_ids) == 0:
+        print("Nothing found on CSD.")
+        row_buffer.append([doi, "None", "NA", "NA", "NA"])
+    # Write the row buffer
+    for row in row_buffer:
+        output_table.writerow(row)
 
 output_table_file.close()
