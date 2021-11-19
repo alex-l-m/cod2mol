@@ -142,7 +142,11 @@ for line in sys.stdin:
         # Get the coordinates of the connected component around each metal atom,
         # in a cartesian coordinate system centered on the iridium
         metal_names = [i \
-            for i in structure.site_properties["label"] \
+            # Seems to make more sense to use the "label" site property, but
+            # that fails if it contains more atoms than the bonding graph,
+            # which actually occurs for some reason in COD entry 4348464
+            for i in set(parsed_cif._cif.data[entry].data["_geom_bond_atom_site_label_1"])\
+            .union(set(parsed_cif._cif.data[entry].data["_geom_bond_atom_site_label_2"]))\
             if re.match(metal_re, i) is not None]
         name2index = dict((label, i) \
             for i, label in enumerate(structure.site_properties["label"]))
@@ -168,6 +172,8 @@ for line in sys.stdin:
                 format(doi, structure_id, metal_name))
             XYZ(molecule).write_file(outfile_base + ".xyz")
             obabel_convert(outfile_base, "xyz", "mol")
+            # Add row to a buffer, so that if the script is interrupted between
+            # entries, it won't skip this entire doi
             output_table.writerow([doi, "COD", structure_id, metal_name, outfile_base + ".mol"])
 
     # Try downloading from CSD if nothing was available from COD
