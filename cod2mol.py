@@ -37,7 +37,7 @@ except RuntimeError:
 
 # A regular expression for recognizing element symbols at the beginning of
 # strings, which represent metals
-metals = ["Ir", "Pt"]
+metals = ["Ir"]
 metal_re = "(" + "|".join(metals) + ")"
 
 url = "www.crystallography.net"
