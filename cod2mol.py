@@ -17,6 +17,7 @@ from pymatgen.util.coord import pbc_shortest_vectors
 import networkx as nx
 from networkx.algorithms.traversal.breadth_first_search import bfs_edges
 import pymysql
+from rdkit import Chem
 
 # Check if it is possible to search the Cambridge Structural Database, which
 # requires that the user have a license
@@ -40,7 +41,6 @@ metals = ["Ir", "Pt"]
 metal_re = "(" + "|".join(metals) + ")"
 
 url = "www.crystallography.net"
-
 
 def query_executor(cursor, doi):
     sql = 'select file from data where DOI like %s'
@@ -80,7 +80,7 @@ else:
     doi_seen = set()
     output_table_file = open("output_table.csv", "w", newline = "")
     output_table = csv.writer(output_table_file)
-    output_table.writerow(["doi", "database", "entry", "molecule", "filename"])
+    output_table.writerow(["doi", "database", "entry", "molecule", "smiles", "filename"])
 
 for line in sys.stdin:
     # DOI regex from:
@@ -175,9 +175,13 @@ for line in sys.stdin:
                 format(doi, structure_id, metal_name))
             XYZ(molecule).write_file(outfile_base + ".xyz")
             obabel_convert(outfile_base, "xyz", "mol")
+            # Read the file so we can get a SMILES string and check composition
+            # using RDKit functions
+            rdkit_mol = Chem.RemoveHs(Chem.MolFromMolFile(outfile_base + ".mol", sanitize = False))
             # Add row to a buffer, so that if the script is interrupted between
             # entries, it won't skip this entire doi
-            row_buffer.append([doi, "COD", structure_id, metal_name, outfile_base + ".mol"])
+            row_buffer.append([doi, "COD", structure_id, metal_name,
+                Chem.MolToSmiles(rdkit_mol), outfile_base + ".mol"])
 
 
     # Try downloading from CSD if nothing was available from COD
@@ -199,12 +203,15 @@ for line in sys.stdin:
                         with ccdc.io.MoleculeWriter(outfile_base + ".mol2") as writer:
                             writer.write(component)
                         obabel_convert(outfile_base, "mol2", "mol")
+                        # Read the file so we can get a SMILES string and check composition
+                        # using RDKit functions
+                        rdkit_mol = Chem.RemoveHs(Chem.MolFromMolFile(outfile_base + ".mol", sanitize = False))
                         row_buffer.append([doi, "CSD", structure_id,
-                            i, outfile_base + ".mol"])
+                            i, Chem.MolToSmiles(rdkit_mol), outfile_base + ".mol"])
 
     if len(structure_ids) == 0:
         print("Nothing found on CSD.")
-        row_buffer.append([doi, "None", "NA", "NA", "NA"])
+        row_buffer.append([doi, "None", "NA", "NA", "NA", "NA"])
     # Write the row buffer
     for row in row_buffer:
         output_table.writerow(row)
