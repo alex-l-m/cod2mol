@@ -109,6 +109,8 @@ for line in sys.stdin:
     # in this doi is downloaded
     row_buffer = []
     for structure_id in structure_ids:
+        # Keep track of which molecules have been seen already using their SMILES string
+        smiles_seen = set()
         print("Downloading structure {}".format(structure_id))
         # Download any cif files associated with the doi from the Crystallography Open
         # Database.
@@ -175,14 +177,19 @@ for line in sys.stdin:
                 format(doi, structure_id, metal_name))
             XYZ(molecule).write_file(outfile_base + ".xyz")
             obabel_convert(outfile_base, "xyz", "mol")
+            outfile_name = outfile_base + ".mol"
             # Read the file so we can get a SMILES string and check composition
             # using RDKit functions
             rdkit_mol = Chem.RemoveHs(Chem.MolFromMolFile(outfile_base + ".mol", sanitize = False))
-            # Add row to a buffer, so that if the script is interrupted between
-            # entries, it won't skip this entire doi
-            row_buffer.append([doi, "COD", structure_id, metal_name,
-                Chem.MolToSmiles(rdkit_mol), outfile_base + ".mol"])
-
+            smiles = Chem.MolToSmiles(rdkit_mol)
+            if smiles in smiles_seen:
+                os.remove(outfile_name)
+            else:
+                # Add row to a buffer, so that if the script is interrupted between
+                # entries, it won't skip this entire doi
+                row_buffer.append([doi, "COD", structure_id, metal_name,
+                    smiles, outfile_name])
+                smiles_seen.add(smiles)
 
     # Try downloading from CSD if nothing was available from COD
     if len(structure_ids) == 0:
@@ -206,8 +213,15 @@ for line in sys.stdin:
                         # Read the file so we can get a SMILES string and check composition
                         # using RDKit functions
                         rdkit_mol = Chem.RemoveHs(Chem.MolFromMolFile(outfile_base + ".mol", sanitize = False))
-                        row_buffer.append([doi, "CSD", structure_id,
-                            i, Chem.MolToSmiles(rdkit_mol), outfile_base + ".mol"])
+                        smiles = Chem.MolToSmiles(rdkit_mol)
+                        if smiles in smiles_seen:
+                            os.remove(outfile_name)
+                        else:
+                            # Add row to a buffer, so that if the script is interrupted between
+                            # entries, it won't skip this entire doi
+                            row_buffer.append([doi, "CSD", structure_id,
+                                i, smiles, outfile_base + ".mol"])
+                            smiles_seen.add(smiles)
 
     if len(structure_ids) == 0:
         print("Nothing found on CSD.")
