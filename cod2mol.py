@@ -214,7 +214,9 @@ for line in sys.stdin:
                         # using RDKit functions
                         rdkit_mol = Chem.RemoveHs(Chem.MolFromMolFile(outfile_base + ".mol", sanitize = False))
                         smiles = Chem.MolToSmiles(rdkit_mol)
-                        if smiles in smiles_seen:
+                        elements = set(i.GetSymbol() for i in rdkit_mol.GetAtoms())
+                        if smiles in smiles_seen or \
+                                not any(metal in elements for metal in metals):
                             os.remove(outfile_name)
                         else:
                             # Add row to a buffer, so that if the script is interrupted between
