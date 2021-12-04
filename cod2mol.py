@@ -180,7 +180,7 @@ for line in sys.stdin:
             outfile_name = outfile_base + ".mol"
             # Read the file so we can get a SMILES string and check composition
             # using RDKit functions
-            rdkit_mol = Chem.RemoveHs(Chem.MolFromMolFile(outfile_base + ".mol", sanitize = False))
+            rdkit_mol = Chem.RemoveHs(Chem.MolFromMolFile(outfile_base + ".mol", sanitize = False), sanitize = False)
             smiles = Chem.MolToSmiles(rdkit_mol)
             if smiles in smiles_seen:
                 os.remove(outfile_name)
@@ -212,7 +212,7 @@ for line in sys.stdin:
                         obabel_convert(outfile_base, "mol2", "mol")
                         # Read the file so we can get a SMILES string and check composition
                         # using RDKit functions
-                        rdkit_mol = Chem.RemoveHs(Chem.MolFromMolFile(outfile_base + ".mol", sanitize = False))
+                        rdkit_mol = Chem.RemoveHs(Chem.MolFromMolFile(outfile_base + ".mol", sanitize = False), sanitize = False)
                         smiles = Chem.MolToSmiles(rdkit_mol)
                         elements = set(i.GetSymbol() for i in rdkit_mol.GetAtoms())
                         if smiles in smiles_seen or \
