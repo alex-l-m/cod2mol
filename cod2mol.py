@@ -217,6 +217,7 @@ for line in sys.stdin:
                         with ccdc.io.MoleculeWriter(outfile_base + ".mol2") as writer:
                             writer.write(component)
                         obabel_convert(outfile_base, "mol2", "mol")
+                        outfile_name = outfile_base + ".mol"
                         # Read the file so we can get a SMILES string and check composition
                         # using RDKit functions
                         rdkit_mol = Chem.RemoveHs(\
@@ -231,7 +232,7 @@ for line in sys.stdin:
                             # Add row to a buffer, so that if the script is interrupted between
                             # entries, it won't skip this entire doi
                             row_buffer.append([doi, "CSD", structure_id,
-                                i, smiles, outfile_base + ".mol"])
+                                i, smiles, outfile_name])
                             smiles_seen.add(smiles)
 
     if len(structure_ids) == 0:
