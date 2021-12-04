@@ -221,6 +221,10 @@ for line in sys.stdin:
                         with ccdc.io.MoleculeWriter(outfile_base + ".mol2") as writer:
                             writer.write(component)
                         convert_success = obabel_convert(outfile_base, "mol2", "mol")
+                        # Skip if Open Babel doesn't find a molecule
+                        # This happened for CSD entry GOKHAQ
+                        # The reason was that the entry does not actually
+                        # contain 3D coordinates
                         if not convert_success:
                             os.remove(outfile_base + ".mol2")
                             continue
