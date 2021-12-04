@@ -65,9 +65,10 @@ def obabel_convert(outfile_base, format_a, format_b):
         obabel_mol = obabel_mols[0]
     except IndexError:
         print("OpenBabel did not find a molecule")
-        return
+        return False
     obabel_mol.write(format_b, outfile_name, overwrite = True)
     os.remove(outfile_temp)
+    return True
 
 # Newline argument to prevent empty lines
 # Following suggestion in this stackoverflow answer:
@@ -181,7 +182,10 @@ for line in sys.stdin:
             outfile_base = slugify("doi_{}_entry_{}_molecule_{}".\
                 format(doi, structure_id, metal_name))
             XYZ(molecule).write_file(outfile_base + ".xyz")
-            obabel_convert(outfile_base, "xyz", "mol")
+            convert_success = obabel_convert(outfile_base, "xyz", "mol")
+            if not convert_success:
+                os.remove(outfile_base + ".xyz")
+                continue
             outfile_name = outfile_base + ".mol"
             # Read the file so we can get a SMILES string and check composition
             # using RDKit functions
@@ -216,7 +220,10 @@ for line in sys.stdin:
                             format(doi, structure_id, i))
                         with ccdc.io.MoleculeWriter(outfile_base + ".mol2") as writer:
                             writer.write(component)
-                        obabel_convert(outfile_base, "mol2", "mol")
+                        convert_success = obabel_convert(outfile_base, "mol2", "mol")
+                        if not convert_success:
+                            os.remove(outfile_base + ".mol2")
+                            continue
                         outfile_name = outfile_base + ".mol"
                         # Read the file so we can get a SMILES string and check composition
                         # using RDKit functions
