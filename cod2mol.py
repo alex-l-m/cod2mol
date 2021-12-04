@@ -186,7 +186,7 @@ for line in sys.stdin:
             # Read the file so we can get a SMILES string and check composition
             # using RDKit functions
             rdkit_mol = Chem.RemoveHs(\
-                Chem.MolFromMolFile(outfile_base + ".mol", sanitize = False),
+                Chem.MolFromMolFile(outfile_name, sanitize = False),
                 sanitize = False)
             smiles = Chem.MolToSmiles(rdkit_mol)
             if smiles in smiles_seen:
@@ -221,7 +221,7 @@ for line in sys.stdin:
                         # Read the file so we can get a SMILES string and check composition
                         # using RDKit functions
                         rdkit_mol = Chem.RemoveHs(\
-                            Chem.MolFromMolFile(outfile_base + ".mol", sanitize = False),
+                            Chem.MolFromMolFile(outfile_name, sanitize = False),
                             sanitize = False)
                         smiles = Chem.MolToSmiles(rdkit_mol)
                         elements = set(i.GetSymbol() for i in rdkit_mol.GetAtoms())
