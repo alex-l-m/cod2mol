@@ -73,14 +73,20 @@ def obabel_convert(outfile_base, format_a, format_b):
 # Following suggestion in this stackoverflow answer:
 # https://stackoverflow.com/a/3348664/4434502
 if os.path.isfile("output_table.csv"):
-    doi_seen = set(pd.read_csv("output_table.csv").doi.tolist())
+    prevtable = pd.read_csv("output_table.csv")
+    doi_seen = set(prevtable.doi.tolist())
+    smiles_seen = set(prevtable.smiles.tolist())
     output_table_file = open("output_table.csv", "a", newline = "")
     output_table = csv.writer(output_table_file)
 else:
     doi_seen = set()
+    smiles_seen = set()
     output_table_file = open("output_table.csv", "w", newline = "")
     output_table = csv.writer(output_table_file)
     output_table.writerow(["doi", "database", "entry", "molecule", "smiles", "filename"])
+
+
+
 
 for line in sys.stdin:
     # DOI regex from:
@@ -110,7 +116,6 @@ for line in sys.stdin:
     row_buffer = []
     for structure_id in structure_ids:
         # Keep track of which molecules have been seen already using their SMILES string
-        smiles_seen = set()
         print("Downloading structure {}".format(structure_id))
         # Download any cif files associated with the doi from the Crystallography Open
         # Database.
