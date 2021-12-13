@@ -111,144 +111,156 @@ for line in sys.stdin:
     print("Looking up ids for doi {}".format(doi))
     print("Searching COD for entries with doi {}".format(doi))
     structure_ids = query_executor(mysql_cursor, doi)
+    if len(structure_ids) > 0:
+        database = "COD"
+        print("Entries found on COD.")
+    elif csd_available:
+        print("Searching CSD for entries with doi {}".format(doi))
+        csd_query = ccdc.search.TextNumericSearch()
+        csd_query.add_doi(doi)
+        with ccdc.io.MoleculeReader("CSD") as csd_reader:
+            csd_results = list(csd_query.search())
+            for hit in csd_results:
+                structure_id = hit.identifier
+                # This is really just so it can remember later that it found something
+                structure_ids.append(structure_id)
+        if len(structure_ids) > 0:
+            database = "CSD"
+            print("Entries found on CSD.")
+        else:
+            database = "NA"
+            print("No entries found.")
 
     # Buffer for rows in the output table, only to be written after every entry
     # in this doi is downloaded
     row_buffer = []
-    for structure_id in structure_ids:
-        # Keep track of which molecules have been seen already using their SMILES string
-        print("Downloading structure {}".format(structure_id))
-        # Download any cif files associated with the doi from the Crystallography Open
-        # Database.
-        cif_text = \
-            requests.get("http://{}/cod/{}.cif".format(url, structure_id)).text
-        # Parse the cif file using pymatgen's cif parser
-        parsed_cif = CifParser.from_string(cif_text)
-        entries = list(parsed_cif._cif.data.keys())
-        assert len(entries) == 1
-        entry = entries[0]
+    if database == "COD":
+        for structure_id in structure_ids:
+            # Keep track of which molecules have been seen already using their SMILES string
+            print("Downloading structure {}".format(structure_id))
+            # Download any cif files associated with the doi from the Crystallography Open
+            # Database.
+            cif_text = \
+                requests.get("http://{}/cod/{}.cif".format(url, structure_id)).text
+            # Parse the cif file using pymatgen's cif parser
+            parsed_cif = CifParser.from_string(cif_text)
+            entries = list(parsed_cif._cif.data.keys())
+            assert len(entries) == 1
+            entry = entries[0]
 
-        # Make a graph using the bonding information in the cif file
-        bonding_graph = nx.empty_graph()
-        try:
-            for atom1, atom2 in zip(\
-                parsed_cif._cif.data[entry].data["_geom_bond_atom_site_label_1"],
-                parsed_cif._cif.data[entry].data["_geom_bond_atom_site_label_2"]):
-                bonding_graph.add_edge(atom1, atom2)
-        except KeyError:
-            print("No bonding information in cif file")
-            continue
-
-        # Create a pymatgen structure object from the cif file
-        data = parsed_cif._cif.data[entry].data
-        atom_names = data["_atom_site_label"]
-        lattice = parsed_cif.get_lattice(parsed_cif._cif.data[entry])
-        species = data["_atom_site_type_symbol"]
-        coords = np.array([[str2float(i) for i in data["_atom_site_fract_x"]],
-            [str2float(i) for i in data["_atom_site_fract_y"]],
-            [str2float(i) for i in data["_atom_site_fract_z"]]]).transpose()
-        structure = Structure(lattice, species, coords,
-            site_properties = {"label": atom_names})
-
-        # Get the coordinates of the connected component around each metal atom,
-        # in a cartesian coordinate system centered on the iridium
-        metal_names = [i \
-            # Seems to make more sense to use the "label" site property, but
-            # that fails if it contains more atoms than the bonding graph,
-            # which actually occurs for some reason in COD entry 4348464
-            for i in set(parsed_cif._cif.data[entry].data["_geom_bond_atom_site_label_1"])\
-            .union(set(parsed_cif._cif.data[entry].data["_geom_bond_atom_site_label_2"]))\
-            if re.match(metal_re, i) is not None]
-        name2index = dict((label, i) \
-            for i, label in enumerate(structure.site_properties["label"]))
-        edge_lengths = dict()
-        for metal_name in metal_names:
-            print("Outputting molecule around metal atom {}".format(metal_name))
-            component_coordinates = {metal_name: np.array([[[0., 0., 0.]]])}
-            component_edges = bfs_edges(bonding_graph, metal_name)
-            for edge in component_edges:
-                displacement = pbc_shortest_vectors(structure.lattice,
-                    structure.sites[name2index[edge[0]]].frac_coords,
-                    structure.sites[name2index[edge[1]]].frac_coords)
-                component_coordinates[edge[1]] = \
-                    component_coordinates[edge[0]] + displacement
-                edge_lengths[edge] = np.linalg.norm(displacement)
-            element_symbols = [re.match("[A-Z][a-z]?", i).group(0) \
-                for i in component_coordinates.keys()]
-            molecule = Molecule(element_symbols,
-                # The coordinate vectors have too many dimensions; flatten them
-                list(i.flatten() for i in component_coordinates.values()))
-
-            outfile_base = slugify("doi_{}_entry_{}_molecule_{}".\
-                format(doi, structure_id, metal_name))
-            XYZ(molecule).write_file(outfile_base + ".xyz")
-            convert_success = obabel_convert(outfile_base, "xyz", "mol")
-            if not convert_success:
-                os.remove(outfile_base + ".xyz")
+            # Make a graph using the bonding information in the cif file
+            bonding_graph = nx.empty_graph()
+            try:
+                for atom1, atom2 in zip(\
+                    parsed_cif._cif.data[entry].data["_geom_bond_atom_site_label_1"],
+                    parsed_cif._cif.data[entry].data["_geom_bond_atom_site_label_2"]):
+                    bonding_graph.add_edge(atom1, atom2)
+            except KeyError:
+                print("No bonding information in cif file")
                 continue
-            outfile_name = outfile_base + ".mol"
-            # Read the file so we can get a SMILES string and check composition
-            # using RDKit functions
-            rdkit_mol = Chem.RemoveHs(\
-                Chem.MolFromMolFile(outfile_name, sanitize = False),
-                sanitize = False)
-            smiles = Chem.MolToSmiles(rdkit_mol)
-            if smiles in smiles_seen:
-                os.remove(outfile_name)
-            else:
-                # Add row to a buffer, so that if the script is interrupted between
-                # entries, it won't skip this entire doi
-                row_buffer.append([doi, "COD", structure_id, metal_name,
-                    smiles, outfile_name])
-                smiles_seen.add(smiles)
+
+            # Create a pymatgen structure object from the cif file
+            data = parsed_cif._cif.data[entry].data
+            atom_names = data["_atom_site_label"]
+            lattice = parsed_cif.get_lattice(parsed_cif._cif.data[entry])
+            species = data["_atom_site_type_symbol"]
+            coords = np.array([[str2float(i) for i in data["_atom_site_fract_x"]],
+                [str2float(i) for i in data["_atom_site_fract_y"]],
+                [str2float(i) for i in data["_atom_site_fract_z"]]]).transpose()
+            structure = Structure(lattice, species, coords,
+                site_properties = {"label": atom_names})
+
+            # Get the coordinates of the connected component around each metal atom,
+            # in a cartesian coordinate system centered on the iridium
+            metal_names = [i \
+                # Seems to make more sense to use the "label" site property, but
+                # that fails if it contains more atoms than the bonding graph,
+                # which actually occurs for some reason in COD entry 4348464
+                for i in set(parsed_cif._cif.data[entry].data["_geom_bond_atom_site_label_1"])\
+                .union(set(parsed_cif._cif.data[entry].data["_geom_bond_atom_site_label_2"]))\
+                if re.match(metal_re, i) is not None]
+            name2index = dict((label, i) \
+                for i, label in enumerate(structure.site_properties["label"]))
+            edge_lengths = dict()
+            for metal_name in metal_names:
+                print("Outputting molecule around metal atom {}".format(metal_name))
+                component_coordinates = {metal_name: np.array([[[0., 0., 0.]]])}
+                component_edges = bfs_edges(bonding_graph, metal_name)
+                for edge in component_edges:
+                    displacement = pbc_shortest_vectors(structure.lattice,
+                        structure.sites[name2index[edge[0]]].frac_coords,
+                        structure.sites[name2index[edge[1]]].frac_coords)
+                    component_coordinates[edge[1]] = \
+                        component_coordinates[edge[0]] + displacement
+                    edge_lengths[edge] = np.linalg.norm(displacement)
+                element_symbols = [re.match("[A-Z][a-z]?", i).group(0) \
+                    for i in component_coordinates.keys()]
+                molecule = Molecule(element_symbols,
+                    # The coordinate vectors have too many dimensions; flatten them
+                    list(i.flatten() for i in component_coordinates.values()))
+
+                # NOTE: what is slugify? why was it necessary?
+                outfile_base = slugify("doi_{}_entry_{}_molecule_{}".\
+                    format(doi, structure_id, metal_name))
+                XYZ(molecule).write_file(outfile_base + ".xyz")
+                convert_success = obabel_convert(outfile_base, "xyz", "mol")
+                if not convert_success:
+                    os.remove(outfile_base + ".xyz")
+                    continue
+                outfile_name = outfile_base + ".mol"
+                # Read the file so we can get a SMILES string and check composition
+                # using RDKit functions
+                rdkit_mol = Chem.RemoveHs(\
+                    Chem.MolFromMolFile(outfile_name, sanitize = False),
+                    sanitize = False)
+                smiles = Chem.MolToSmiles(rdkit_mol)
+                if smiles in smiles_seen:
+                    os.remove(outfile_name)
+                else:
+                    # Add row to a buffer, so that if the script is interrupted between
+                    # entries, it won't skip this entire doi
+                    row_buffer.append([doi, "COD", structure_id, metal_name,
+                        smiles, outfile_name])
+                    smiles_seen.add(smiles)
 
     # Try downloading from CSD if nothing was available from COD
-    if len(structure_ids) == 0:
-        print("Nothing found on COD.")
-        if csd_available:
-            print("Searching CSD for entries with doi {}".format(doi))
-            csd_query = ccdc.search.TextNumericSearch()
-            csd_query.add_doi(doi)
-            with ccdc.io.MoleculeReader("CSD") as csd_reader:
-                for hit in csd_query.search():
-                    structure_id = hit.identifier
-                    # This is really just so it can remember later that it found something
-                    structure_ids.append(structure_id)
-                    molecule_entry = csd_reader.molecule(structure_id)
-                    for i, component in enumerate(molecule_entry.components):
-                        outfile_base = slugify("doi_{}_entry_{}_molecule_{}".\
-                            format(doi, structure_id, i))
-                        with ccdc.io.MoleculeWriter(outfile_base + ".mol2") as writer:
-                            writer.write(component)
-                        convert_success = obabel_convert(outfile_base, "mol2", "mol")
-                        # Skip if Open Babel doesn't find a molecule
-                        # This happened for CSD entry GOKHAQ
-                        # The reason was that the entry does not actually
-                        # contain 3D coordinates
-                        if not convert_success:
-                            os.remove(outfile_base + ".mol2")
-                            continue
-                        outfile_name = outfile_base + ".mol"
-                        # Read the file so we can get a SMILES string and check composition
-                        # using RDKit functions
-                        rdkit_mol = Chem.RemoveHs(\
-                            Chem.MolFromMolFile(outfile_name, sanitize = False),
-                            sanitize = False)
-                        smiles = Chem.MolToSmiles(rdkit_mol)
-                        elements = set(i.GetSymbol() for i in rdkit_mol.GetAtoms())
-                        if smiles in smiles_seen or \
-                                not any(metal in elements for metal in metals):
-                            os.remove(outfile_name)
-                        else:
-                            # Add row to a buffer, so that if the script is interrupted between
-                            # entries, it won't skip this entire doi
-                            row_buffer.append([doi, "CSD", structure_id,
-                                i, smiles, outfile_name])
-                            smiles_seen.add(smiles)
+    if database == "CSD":
+        for structure_id in structure_ids:
+            molecule_entry = csd_reader.molecule(structure_id)
+            for i, component in enumerate(molecule_entry.components):
+                outfile_base = slugify("doi_{}_entry_{}_molecule_{}".\
+                    format(doi, structure_id, i))
+                with ccdc.io.MoleculeWriter(outfile_base + ".mol2") as writer:
+                    writer.write(component)
+                convert_success = obabel_convert(outfile_base, "mol2", "mol")
+                # Skip if Open Babel doesn't find a molecule
+                # This happened for CSD entry GOKHAQ
+                # The reason was that the entry does not actually
+                # contain 3D coordinates
+                if not convert_success:
+                    os.remove(outfile_base + ".mol2")
+                    continue
+                outfile_name = outfile_base + ".mol"
+                # Read the file so we can get a SMILES string and check composition
+                # using RDKit functions
+                rdkit_mol = Chem.RemoveHs(\
+                    Chem.MolFromMolFile(outfile_name, sanitize = False),
+                    sanitize = False)
+                smiles = Chem.MolToSmiles(rdkit_mol)
+                elements = set(i.GetSymbol() for i in rdkit_mol.GetAtoms())
+                if smiles in smiles_seen or \
+                        not any(metal in elements for metal in metals):
+                    os.remove(outfile_name)
+                else:
+                    # Add row to a buffer, so that if the script is interrupted between
+                    # entries, it won't skip this entire doi
+                    row_buffer.append([doi, database, structure_id,
+                        i, smiles, outfile_name])
+                    smiles_seen.add(smiles)
 
-    if len(structure_ids) == 0:
-        print("Nothing found on CSD.")
+    if database == "NA":
         row_buffer.append([doi, "None", "NA", "NA", "NA", "NA"])
+
     # Write the row buffer
     for row in row_buffer:
         output_table.writerow(row)
