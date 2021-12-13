@@ -112,6 +112,8 @@ for line in sys.stdin:
     # Structure ids part of condition is redundant but makes it so I can freely
     # reorder these conditionals
     structure_ids = []
+    # This is only for CSD
+    molecule_entries = dict()
     if csd_available and len(structure_ids) == 0:
         print("Searching CSD for entries with doi {}".format(doi))
         csd_query = ccdc.search.TextNumericSearch()
@@ -122,6 +124,8 @@ for line in sys.stdin:
                 structure_id = hit.identifier
                 # This is really just so it can remember later that it found something
                 structure_ids.append(structure_id)
+                molecule_entries[structure_id] = \
+                    csd_reader.molecule(structure_id)
         if len(structure_ids) > 0:
             database = "CSD"
             print("Entries found on CSD.")
@@ -230,7 +234,7 @@ for line in sys.stdin:
     # Try downloading from CSD if nothing was available from COD
     if database == "CSD":
         for structure_id in structure_ids:
-            molecule_entry = csd_reader.molecule(structure_id)
+            molecule_entry = molecule_entries[structure_id]
             for i, component in enumerate(molecule_entry.components):
                 outfile_base = slugify("doi_{}_entry_{}_molecule_{}".\
                     format(doi, structure_id, i))
