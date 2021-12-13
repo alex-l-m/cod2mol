@@ -109,12 +109,10 @@ for line in sys.stdin:
     mysql_cursor = mysql_con.cursor()
 
     print("Looking up ids for doi {}".format(doi))
-    print("Searching COD for entries with doi {}".format(doi))
-    structure_ids = query_executor(mysql_cursor, doi)
-    if len(structure_ids) > 0:
-        database = "COD"
-        print("Entries found on COD.")
-    elif csd_available:
+    # Structure ids part of condition is redundant but makes it so I can freely
+    # reorder these conditionals
+    structure_ids = []
+    if csd_available and len(structure_ids) == 0:
         print("Searching CSD for entries with doi {}".format(doi))
         csd_query = ccdc.search.TextNumericSearch()
         csd_query.add_doi(doi)
@@ -127,9 +125,15 @@ for line in sys.stdin:
         if len(structure_ids) > 0:
             database = "CSD"
             print("Entries found on CSD.")
-        else:
-            database = "NA"
-            print("No entries found.")
+    if len(structure_ids) == 0:
+        print("Searching COD for entries with doi {}".format(doi))
+        structure_ids = query_executor(mysql_cursor, doi)
+        if len(structure_ids) > 0:
+            database = "COD"
+            print("Entries found on COD.")
+    if len(structure_ids) == 0:
+        database = "NA"
+        print("No entries found.")
 
     # Buffer for rows in the output table, only to be written after every entry
     # in this doi is downloaded
