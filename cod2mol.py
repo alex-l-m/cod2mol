@@ -234,8 +234,10 @@ for line in sys.stdin:
     # Try downloading from CSD if nothing was available from COD
     if database == "CSD":
         for structure_id in structure_ids:
+            print("Downloading structure {}".format(structure_id))
             molecule_entry = molecule_entries[structure_id]
             for i, component in enumerate(molecule_entry.components):
+                print("Outputting molecule {}".format(i))
                 outfile_base = slugify("doi_{}_entry_{}_molecule_{}".\
                     format(doi, structure_id, i))
                 with ccdc.io.MoleculeWriter(outfile_base + ".mol2") as writer:
