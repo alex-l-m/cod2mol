@@ -213,7 +213,7 @@ for line in sys.stdin:
                 XYZ(molecule).write_file(outfile_base + ".xyz")
                 convert_success = obabel_convert(outfile_base, "xyz", "mol")
                 if not convert_success:
-                    print("Could not convert with OpenBabel")
+                    print("Could not convert with OpenBabel, discarding")
                     os.remove(outfile_base + ".xyz")
                     continue
                 outfile_name = outfile_base + ".mol"
@@ -224,6 +224,7 @@ for line in sys.stdin:
                     sanitize = False)
                 smiles = Chem.MolToSmiles(rdkit_mol)
                 if smiles in smiles_seen:
+                    print("Already downloaded this molecule (maybe in another entry), discarding")
                     os.remove(outfile_name)
                 else:
                     # Add row to a buffer, so that if the script is interrupted between
@@ -249,7 +250,7 @@ for line in sys.stdin:
                 # The reason was that the entry does not actually
                 # contain 3D coordinates
                 if not convert_success:
-                    print("Could not convert with OpenBabel")
+                    print("Could not convert with OpenBabel, discarding")
                     os.remove(outfile_base + ".mol2")
                     continue
                 outfile_name = outfile_base + ".mol"
@@ -260,8 +261,11 @@ for line in sys.stdin:
                     sanitize = False)
                 smiles = Chem.MolToSmiles(rdkit_mol)
                 elements = set(i.GetSymbol() for i in rdkit_mol.GetAtoms())
-                if smiles in smiles_seen or \
-                        not any(metal in elements for metal in metals):
+                if smiles in smiles_seen:
+                    print("Already downloaded this molecule (maybe in another entry), discarding")
+                    os.remove(outfile_name)
+                if smiles in smiles_seen:
+                    print("No metal atom, discarding")
                     os.remove(outfile_name)
                 else:
                     # Add row to a buffer, so that if the script is interrupted between
