@@ -264,7 +264,7 @@ for line in sys.stdin:
                 if smiles in smiles_seen:
                     print("Already downloaded this molecule (maybe in another entry), discarding")
                     os.remove(outfile_name)
-                if smiles in smiles_seen:
+                elif not any(metal in elements for metal in metals):
                     print("No metal atom, discarding")
                     os.remove(outfile_name)
                 else:
