@@ -92,11 +92,19 @@ else:
 for line in sys.stdin:
     # DOI regex from:
     # https://www.crossref.org/blog/dois-and-matching-regular-expressions/
-    # Modified to make case insensitive
+    # The first regex given fails on this one:
+    # 10.1002/1521-4095(20020116)14:2<147::AID-ADMA147>3.0.CO;2-3
+    # Therefore, using the second one:
+    old_doi_match = re.search(r"10.1002/[^\s]+", line)
+    # Then, trying the first (modern) one, modified to be case insensitive:
     doi_match = re.search(r"10.\d{4,9}/[-._;()/:A-Za-z0-9]+", line)
-    if doi_match is None:
+    if old_doi_match is not None:
+        doi = old_doi_match.group(0)
+    elif doi_match is not None:
+        doi = doi_match.group(0)
+    else:
         print("No DOI found in input {}".format(line.strip()))
-    doi = doi_match.group(0)
+        continue
 
     # Don't download entries for the same paper twice
     if doi in doi_seen:
