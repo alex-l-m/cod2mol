@@ -60,8 +60,11 @@ def query_by_id(ccdc_id):
 
     return entry
 
-def save_entry_as_cif(entry):
-    pass
+def save_entry_as_cif(entry, filename):
+    # Doesn't seem to be the same as the cif file you get from the website
+    # Probably not going to use this
+    cif_file_text = entry.to_string("cif")
+    open(filename, "w").write(cif_file_text)
 
 def save_entry_as_mol2(entry, filename):
     with ccdc.io.MoleculeWriter(filename) as writer:
