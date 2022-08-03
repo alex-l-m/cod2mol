@@ -1,3 +1,4 @@
+import ccdc
 import re
 
 # DOI regex from:
@@ -45,16 +46,21 @@ def query_by_doi(doi):
 
     return entries
 
-def query_by_id(doi):
-    validate_ccdc_id(doi)
+def query_by_id(ccdc_id):
+    validate_ccdc_id(ccdc_id)
+
+    with ccdc.io.EntryReader("CSD") as csd_entry_reader:
+        entry = csd_entry_reader.entry(ccdc_id)
 
     return entry
 
 def save_entry_as_cif(entry):
     pass
 
-def save_entry_as_mol2(entry):
-    pass
+def save_entry_as_mol2(entry, filename):
+    with ccdc.io.MoleculeWriter(filename) as writer:
+        writer.write(entry.molecule)
+    
 
 def entry_to_row(entry):
     return row
