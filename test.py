@@ -1,4 +1,6 @@
 import ccdc
+import ccdc.search
+import ccdc.io
 import re
 
 # DOI regex from:
@@ -43,7 +45,11 @@ def extract_ccdc_id(string):
 
 def query_by_doi(doi):
     validate_doi(doi)
-
+    csd_query = ccdc.search.TextNumericSearch()
+    csd_query.add_doi(doi)
+    # List of "SearchHit" objects
+    csd_results = list(csd_query.search())
+    entries = [hit.entry for hit in csd_results]
     return entries
 
 def query_by_id(ccdc_id):
@@ -60,7 +66,6 @@ def save_entry_as_cif(entry):
 def save_entry_as_mol2(entry, filename):
     with ccdc.io.MoleculeWriter(filename) as writer:
         writer.write(entry.molecule)
-    
 
 def entry_to_row(entry):
     return row
