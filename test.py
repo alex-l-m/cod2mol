@@ -71,4 +71,8 @@ def save_entry_as_mol2(entry, filename):
         writer.write(entry.molecule)
 
 def entry_to_row(entry):
+    row = dict({\
+        "doi": entry.publication.doi,
+        "database": "CSD",
+        "entry": entry.identifier})
     return row
