@@ -101,8 +101,8 @@ for line in sys.stdin:
     entries = util.query_by_doi(doi)
 
     for entry in entries:
-        filename = 
-        row = entry_to_row(entry, filename)
+        save_entry_as_mol2(entry)
+        row = entry_to_row(entry)
         output_table.writerow(row)
 
     if len(entries) == 0:
