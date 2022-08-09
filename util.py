@@ -74,7 +74,7 @@ def entry_to_row(entry):
         "doi": entry.publication.doi,
         "database": "CSD",
         "entry": entry.identifier,
-        "filename": ???????/})
+        "filename": None})
     return row
 
 def doi_to_empty_row(doi):
