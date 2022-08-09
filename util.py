@@ -1,7 +1,6 @@
 import ccdc
 import ccdc.search
 import ccdc.io
-import re
 
 # DOI regex from:
 # https://www.crossref.org/blog/dois-and-matching-regular-expressions/
@@ -74,5 +73,22 @@ def entry_to_row(entry):
     row = dict({\
         "doi": entry.publication.doi,
         "database": "CSD",
-        "entry": entry.identifier})
+        "entry": entry.identifier,
+        "filename": ???????/})
+    return row
+
+def doi_to_empty_row(doi):
+    row = dict({\
+        "doi": doi,
+        "database": None,
+        "entry": None,
+        "filename": None})
+    return row
+
+def entry_to_empty_row(entry):
+    row = dict({\
+        "doi": None,
+        "database": "CSD",
+        "entry": entry,
+        "filename": None})
     return row
