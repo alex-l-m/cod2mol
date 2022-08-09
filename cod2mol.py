@@ -28,7 +28,7 @@ else:
 
 for line in sys.stdin:
     doi = util.extract_doi(line)
-    if doi in doi_seen:
+    if doi in doi_seen or doi is None:
         continue
     doi_seen.add(doi)
 
@@ -38,11 +38,13 @@ for line in sys.stdin:
 
     for entry in entries:
         util.save_entry_as_mol2(entry)
-        row = util.entry_to_row(entry)
-        output_table.writerow(row)
+        row_dict = util.entry_to_row(entry)
+        row_list = [row_dict[var] for var in header_row]
+        output_table.writerow(row_list)
 
     if len(entries) == 0:
-        row = util.doi_to_empty_row(doi)
-        output_table.writerow(row)
+        row_dict = util.doi_to_empty_row(doi)
+        row_list = [row_dict[var] for var in header_row]
+        output_table.writerow(row_lit)
 
 output_table_file.close()
