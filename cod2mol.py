@@ -78,9 +78,9 @@ if os.path.isfile("output_table.csv"):
     prevtable = list(csv.reader(open("output_table.csv", "r", newline = "")))
     assert prevtable[0] == header_row
     doi_index = header_row.index("doi")
-    doi_seen = set([row[doi_index] for row in prevtable[1:])
+    doi_seen = set(row[doi_index] for row in prevtable[1:])
     entry_index = header_row.index("entry")
-    entry_seen = set([row[entry_index] for row in prevtable[1:])
+    entry_seen = set(row[entry_index] for row in prevtable[1:])
     output_table_file = open("output_table.csv", "a", newline = "")
     output_table = csv.writer(output_table_file)
 else:
