@@ -1,3 +1,4 @@
+import re
 import ccdc
 import ccdc.search
 import ccdc.io
