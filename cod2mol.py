@@ -9,7 +9,8 @@ import util
 # Following suggestion in this stackoverflow answer:
 # https://stackoverflow.com/a/3348664/4434502
 header_row = ["doi", "database", "entry", "filename"]
-if os.path.isfile("output_table.csv"):
+if os.path.isfile("output_table.csv") and \
+    len([line for line in open("output_table.csv").readlines() if line != "\n"]) >= 2:
     prevtable = list(csv.reader(open("output_table.csv", "r", newline = "")))
     assert prevtable[0] == header_row
     doi_index = header_row.index("doi")
