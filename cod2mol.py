@@ -23,7 +23,7 @@ else:
     entry_seen = set()
     output_table_file = open("output_table.csv", "w", newline = "")
     output_table = csv.writer(output_table_file)
-    output_table.writerow()
+    output_table.writerow(header_row)
 
 for line in sys.stdin:
     doi = util.extract_doi(line)
