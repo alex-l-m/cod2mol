@@ -106,4 +106,4 @@ def entry_to_components(entry):
     return entry.molecule.components
 
 def molecule_element_count(mol, symbol):
-    return len(atom for atom in mol.atoms if atom.atomic_symbol == symbol)
+    return len([atom for atom in mol.atoms if atom.atomic_symbol == symbol])
