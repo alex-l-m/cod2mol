@@ -78,7 +78,8 @@ def entry_to_row(entry, mol):
         "database": "CSD",
         "entry": entry.identifier,
         "filename": entry.identifier + ".mol2",
-        "formula": mol.formula,
+        "crystal_formula": entry.formula,
+        "molecule_formula": mol.formula,
         "formal_charge": mol.formal_charge})
     return row
 
@@ -88,7 +89,8 @@ def doi_to_empty_row(doi):
         "database": None,
         "entry": None,
         "filename": None,
-        "formula": None,
+        "crystal_formula": None,
+        "molecule_formula": None,
         "formal_charge": None})
     return row
 
@@ -98,7 +100,8 @@ def entry_to_empty_row(entry):
         "database": "CSD",
         "entry": entry,
         "filename": None,
-        "formula": None,
+        "crystal_formula": None,
+        "molecule_formula": None,
         "formal_charge": None})
     return row
 
