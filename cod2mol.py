@@ -40,12 +40,12 @@ for line in sys.stdin:
         components_with_one_ir = [component for component in components \
                 if util.molecule_element_count(component, "Ir") == 1]
         if len(components_with_one_ir) == 0:
-            print("Found a component with one iridium")
+            print("No components with one iridium")
             row_dict = util.doi_to_empty_row(doi)
             row_list = [row_dict[var] for var in header_row]
             output_table.writerow(row_list)
         else:
-            print("No components with one iridium")
+            print("Found a component with one iridium")
             component_to_write = components_with_one_ir[0]
             util.save_mol_as_mol2(entry, component_to_write)
             row_dict = util.doi_to_empty_row(doi)
