@@ -8,7 +8,7 @@ import util
 # Newline argument to prevent empty lines
 # Following suggestion in this stackoverflow answer:
 # https://stackoverflow.com/a/3348664/4434502
-header_row = ["doi", "database", "entry", "filename"]
+header_row = ["doi", "database", "entry", "filename", "formula", "formal_charge"]
 if os.path.isfile("output_table.csv") and \
     len([line for line in open("output_table.csv").readlines() if line != "\n"]) >= 2:
     prevtable = list(csv.reader(open("output_table.csv", "r", newline = "")))
@@ -48,7 +48,7 @@ for line in sys.stdin:
             print("Found a component with one iridium")
             component_to_write = components_with_one_ir[0]
             util.save_mol_as_mol2(entry, component_to_write)
-            row_dict = util.doi_to_empty_row(doi)
+            row_dict = util.entry_to_row(entry, component_to_write)
             row_list = [row_dict[var] for var in header_row]
             output_table.writerow(row_list)
 
