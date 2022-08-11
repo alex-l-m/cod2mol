@@ -31,16 +31,26 @@ for line in sys.stdin:
         continue
     doi_seen.add(doi)
 
-    print("Looking up ids for doi {}".format(doi))
     print("Searching CSD for entries with doi {}".format(doi))
     entries = util.query_by_doi(doi)
 
     for entry in entries:
-        util.save_entry_as_mol2(entry)
-        row = util.entry_to_row(entry)
-        output_table.writerow(row)
+        components = util.entry_to_components(entry)
+        components_with_one_ir = [component for component in components \
+                if util.molecule_element_count(component, "Ir") == 1]
+        if len(components_with_one_ir) == 0:
+            print("Found a component with one iridium")
+            row = util.doi_to_empty_row(doi)
+            output_table.writerow(row)
+        else:
+            print("No components with one iridium")
+            component_to_write = components_with_one_ir[0]
+            util.save_mol_as_mol2(entry, component_to_write)
+            row = util.entry_to_row(entry, component_to_write)
+            output_table.writerow(row)
 
     if len(entries) == 0:
+        print("No results from search")
         row = util.doi_to_empty_row(doi)
         output_table.writerow(row)
 

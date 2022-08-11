@@ -67,17 +67,19 @@ def save_entry_as_cif(entry):
     cif_file_text = entry.to_string("cif")
     open(filename, "w").write(cif_file_text)
 
-def save_entry_as_mol2(entry):
+def save_mol_as_mol2(entry, mol):
     filename = entry.identifier + ".mol2"
     with ccdc.io.MoleculeWriter(filename) as writer:
-        writer.write(entry.molecule)
+        writer.write(mol)
 
-def entry_to_row(entry):
+def entry_to_row(entry, mol):
     row = dict({\
         "doi": entry.publication.doi,
         "database": "CSD",
         "entry": entry.identifier,
-        "filename": entry.identifier + ".mol2"})
+        "filename": entry.identifier + ".mol2",
+        "formula": mol.formula,
+        "formal_charge": mol.formal_charge})
     return row
 
 def doi_to_empty_row(doi):
@@ -85,7 +87,9 @@ def doi_to_empty_row(doi):
         "doi": doi,
         "database": None,
         "entry": None,
-        "filename": None})
+        "filename": None,
+        "formula": None,
+        "formal_charge": None})
     return row
 
 def entry_to_empty_row(entry):
@@ -93,5 +97,13 @@ def entry_to_empty_row(entry):
         "doi": None,
         "database": "CSD",
         "entry": entry,
-        "filename": None})
+        "filename": None,
+        "formula": None,
+        "formal_charge": None})
     return row
+
+def entry_to_components(entry):
+    return entry.molecule.components
+
+def molecule_element_count(mol, symbol):
+    return len(atom for atom in mol.atoms if atom.atomic_symbol == symbol)
