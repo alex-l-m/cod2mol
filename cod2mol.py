@@ -8,7 +8,7 @@ import util
 # Newline argument to prevent empty lines
 # Following suggestion in this stackoverflow answer:
 # https://stackoverflow.com/a/3348664/4434502
-header_row = ["doi", "database", "entry", "filename", "crystal_formula", "molecule_formula", "formal_charge"]
+header_row = ["doi", "database", "entry", "deposition_number", "filename", "crystal_formula", "molecule_formula", "formal_charge"]
 if os.path.isfile("output_table.csv") and \
     len([line for line in open("output_table.csv").readlines() if line != "\n"]) >= 2:
     prevtable = list(csv.reader(open("output_table.csv", "r", newline = "")))
