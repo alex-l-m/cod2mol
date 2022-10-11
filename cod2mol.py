@@ -4,6 +4,12 @@ import os.path
 import sys
 import util
 
+# Identify target element
+if len(sys.argv) > 1:
+    target_element = sys.argv[1]
+else:
+    target_element = "Ir"
+
 
 # Newline argument to prevent empty lines
 # Following suggestion in this stackoverflow answer:
@@ -38,14 +44,14 @@ for line in sys.stdin:
     for entry in entries:
         components = util.entry_to_components(entry)
         components_with_one_ir = [component for component in components \
-                if util.molecule_element_count(component, "Ir") == 1]
+                if util.molecule_element_count(component, target_element) == 1]
         if len(components_with_one_ir) == 0:
-            print("No components with one iridium")
+            print(f"No components with one {target_element} atom")
             row_dict = util.doi_to_empty_row(doi)
             row_list = [row_dict[var] for var in header_row]
             output_table.writerow(row_list)
         else:
-            print("Found a component with one iridium")
+            print(f"Found a component with one {target_element} atom")
             component_to_write = components_with_one_ir[0]
             util.save_mol_as_mol2(entry, component_to_write)
             row_dict = util.entry_to_row(entry, component_to_write)
