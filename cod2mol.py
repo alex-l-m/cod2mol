@@ -44,7 +44,7 @@ for line in sys.stdin:
     for entry in entries:
         components = util.entry_to_components(entry)
         components_with_ir = [component for component in components \
-                if util.molecule_element_count(component, target_element) > 1]
+                if util.molecule_element_count(component, target_element) >= 1]
         if len(components_with_ir) == 0:
             print(f"No components with {target_element}")
             row_dict = util.doi_to_empty_row(doi)
