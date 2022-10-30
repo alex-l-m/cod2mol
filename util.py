@@ -78,10 +78,11 @@ def entry_to_row(entry, mol):
         "database": "CSD",
         "entry": entry.identifier,
         "deposition_number": entry.ccdc_number,
-        "filename": entry.identifier + ".mol2",
+        "filename": entry.identifier + ".mol",
         "crystal_formula": entry.formula,
         "molecule_formula": mol.formula,
-        "formal_charge": mol.formal_charge})
+        "formal_charge": mol.formal_charge,
+        "n_metal": molecule_element_count(mol, "Ir")})
     return row
 
 def doi_to_empty_row(doi):
