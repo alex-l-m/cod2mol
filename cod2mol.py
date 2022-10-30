@@ -51,7 +51,7 @@ for line in sys.stdin:
             row_list = [row_dict[var] for var in header_row]
             output_table.writerow(row_list)
         else:
-            print("Found a component with {target_element}")
+            print(f"Found a component with {target_element}")
             component_to_write = components_with_ir[0]
             util.save_mol_as_mol(entry, component_to_write)
             row_dict = util.entry_to_row(entry, component_to_write, target_element)
