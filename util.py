@@ -67,21 +67,22 @@ def save_entry_as_cif(entry):
     cif_file_text = entry.to_string("cif")
     open(filename, "w").write(cif_file_text)
 
-def save_mol_as_mol2(entry, mol):
-    filename = entry.identifier + ".mol2"
+def save_mol_as_mol(entry, mol):
+    filename = entry.identifier + ".mol"
     with ccdc.io.MoleculeWriter(filename) as writer:
         writer.write(mol)
 
-def entry_to_row(entry, mol):
+def entry_to_row(entry, mol, target_element):
     row = dict({\
         "doi": entry.publication.doi,
         "database": "CSD",
         "entry": entry.identifier,
         "deposition_number": entry.ccdc_number,
-        "filename": entry.identifier + ".mol2",
+        "filename": entry.identifier + ".mol",
         "crystal_formula": entry.formula,
         "molecule_formula": mol.formula,
-        "formal_charge": mol.formal_charge})
+        "formal_charge": mol.formal_charge,
+        "n_metal": molecule_element_count(mol, target_element)})
     return row
 
 def doi_to_empty_row(doi):

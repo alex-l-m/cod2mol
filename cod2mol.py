@@ -14,7 +14,7 @@ else:
 # Newline argument to prevent empty lines
 # Following suggestion in this stackoverflow answer:
 # https://stackoverflow.com/a/3348664/4434502
-header_row = ["doi", "database", "entry", "deposition_number", "filename", "crystal_formula", "molecule_formula", "formal_charge"]
+header_row = ["doi", "database", "entry", "deposition_number", "filename", "crystal_formula", "molecule_formula", "formal_charge", "n_metal"]
 if os.path.isfile("output_table.csv") and \
     len([line for line in open("output_table.csv").readlines() if line != "\n"]) >= 2:
     prevtable = list(csv.reader(open("output_table.csv", "r", newline = "")))
@@ -43,18 +43,18 @@ for line in sys.stdin:
 
     for entry in entries:
         components = util.entry_to_components(entry)
-        components_with_one_ir = [component for component in components \
-                if util.molecule_element_count(component, target_element) == 1]
-        if len(components_with_one_ir) == 0:
-            print(f"No components with one {target_element} atom")
+        components_with_ir = [component for component in components \
+                if util.molecule_element_count(component, target_element) > 1]
+        if len(components_with_ir) == 0:
+            print(f"No components with {target_element}")
             row_dict = util.doi_to_empty_row(doi)
             row_list = [row_dict[var] for var in header_row]
             output_table.writerow(row_list)
         else:
-            print(f"Found a component with one {target_element} atom")
-            component_to_write = components_with_one_ir[0]
-            util.save_mol_as_mol2(entry, component_to_write)
-            row_dict = util.entry_to_row(entry, component_to_write)
+            print("Found a component with {target_element}")
+            component_to_write = components_with_ir[0]
+            util.save_mol_as_mol(entry, component_to_write)
+            row_dict = util.entry_to_row(entry, component_to_write, target_element)
             row_list = [row_dict[var] for var in header_row]
             output_table.writerow(row_list)
 
