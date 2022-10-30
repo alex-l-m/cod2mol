@@ -94,7 +94,8 @@ def doi_to_empty_row(doi):
         "filename": None,
         "crystal_formula": None,
         "molecule_formula": None,
-        "formal_charge": None})
+        "formal_charge": None,
+        "n_metal": None})
     return row
 
 def entry_to_empty_row(entry):
@@ -106,7 +107,8 @@ def entry_to_empty_row(entry):
         "filename": None,
         "crystal_formula": None,
         "molecule_formula": None,
-        "formal_charge": None})
+        "formal_charge": None,
+        "n_metal": None})
     return row
 
 def entry_to_components(entry):
