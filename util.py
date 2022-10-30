@@ -67,8 +67,8 @@ def save_entry_as_cif(entry):
     cif_file_text = entry.to_string("cif")
     open(filename, "w").write(cif_file_text)
 
-def save_mol_as_mol2(entry, mol):
-    filename = entry.identifier + ".mol2"
+def save_mol_as_mol(entry, mol):
+    filename = entry.identifier + ".mol"
     with ccdc.io.MoleculeWriter(filename) as writer:
         writer.write(mol)
 

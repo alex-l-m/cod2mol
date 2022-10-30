@@ -47,7 +47,7 @@ for line in sys.stdin:
         else:
             print("Found a component with one iridium")
             component_to_write = components_with_one_ir[0]
-            util.save_mol_as_mol2(entry, component_to_write)
+            util.save_mol_as_mol(entry, component_to_write)
             row_dict = util.entry_to_row(entry, component_to_write)
             row_list = [row_dict[var] for var in header_row]
             output_table.writerow(row_list)
