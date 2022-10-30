@@ -1,4 +1,5 @@
 import re
+import pandas as pd
 import ccdc
 import ccdc.search
 import ccdc.io
@@ -116,3 +117,32 @@ def entry_to_components(entry):
 
 def molecule_element_count(mol, symbol):
     return len([atom for atom in mol.atoms if atom.atomic_symbol == symbol])
+
+def make_mol_table(entry):
+    entry_string = entry.identifier
+    return pd.DataFrame({"mol_id": [entry_string]})
+
+def make_atom_table(entry, mol):
+    entry_string = entry.identifier
+    return pd.DataFrame(
+        {"mol_id": entry_string,
+        "atom_id": atom.label,
+        "symbol": atom.atomic_symbol,
+        "formal_charge": atom.formal_charge}
+        for atom in mol.atoms)
+
+def make_bond_table(entry, mol):
+    entry_string = entry.identifier
+    bond_rows = []
+    for i, bond in enumerate(mol.bonds):
+        source_atom, target_atom = bond.atoms
+        bond_rows.append({
+            "bond_id": f"bond_{i}",
+            "start_atom": source_atom.label,
+            "end_atom": target_atom.label,
+            "bond_type": str(bond.bond_type),
+            "is_conjugated": bond.is_conjugated})
+    bond_table = pd.DataFrame(bond_rows)
+    bond_table["mol_id"] = entry_string
+    return bond_table
+

@@ -53,10 +53,39 @@ for line in sys.stdin:
         else:
             print(f"Found a component with {target_element}")
             component_to_write = components_with_ir[0]
+            
+            # Save molecule file readable with RDKit
             util.save_mol_as_mol(entry, component_to_write)
+
+            # Write molecule data to csv
+            mol_table = util.make_mol_table(entry)
+            if os.path.isfile("download_mol_tbl.csv"):
+                mol_table.to_csv("download_mol_tbl.csv", index = False, header = False, mode = "a")
+            else:
+                mol_table.to_csv("download_mol_tbl.csv", index = False)
+            
+            atom_table = util.make_atom_table(entry, component_to_write)
+            if os.path.isfile("download_one_tbl.csv"):
+                atom_table.to_csv("download_one_tbl.csv", index = False, header = False, mode = "a")
+            else:
+                atom_table.to_csv("download_one_tbl.csv", index = False)
+
+
+            bond_table = util.make_bond_table(entry, component_to_write)
+            if os.path.isfile("download_two_tbl.csv"):
+                bond_table.to_csv("download_two_tbl.csv", index = False, header = False, mode = "a")
+            else:
+                bond_table.to_csv("download_two_tbl.csv", index = False)
+
+            # Add to the metadata table.  This has to go last, since a row in
+            # the metadata table is also the signal that the molecule has been
+            # successfully downloaded
             row_dict = util.entry_to_row(entry, component_to_write, target_element)
             row_list = [row_dict[var] for var in header_row]
             output_table.writerow(row_list)
+
+
+
 
     if len(entries) == 0:
         print("No results from search")
