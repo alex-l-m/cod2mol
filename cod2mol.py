@@ -55,7 +55,7 @@ for line in sys.stdin:
             component_to_write = components_with_ir[0]
             
             # Save molecule file readable with RDKit
-            util.save_mol_as_mol(entry, component_to_write)
+            util.save_mol_as_mol2(entry, component_to_write)
 
             # Write molecule data to csv
             mol_table = util.make_mol_table(entry)
