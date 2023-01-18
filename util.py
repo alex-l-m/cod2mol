@@ -126,9 +126,15 @@ def make_atom_table(entry, mol):
     entry_string = entry.identifier
     return pd.DataFrame(
         {"mol_id": entry_string,
-        "atom_id": atom.label,
+        # the atom id used to be atom.label, but that's nonunique for HEHDIH
+        "atom_id": atom.index,
         "symbol": atom.atomic_symbol,
-        "formal_charge": atom.formal_charge}
+        "formal_charge": atom.formal_charge,
+        # HEHDIH has None for some of the atom coordinates
+        "has_coords": atom.coordinates is not None,
+        "x": atom.coordinates.x if atom.coordinates is not None else None,
+        "y": atom.coordinates.y if atom.coordinates is not None else None,
+        "z": atom.coordinates.z if atom.coordinates is not None else None}
         for atom in mol.atoms)
 
 def make_bond_table(entry, mol):
@@ -138,8 +144,8 @@ def make_bond_table(entry, mol):
         source_atom, target_atom = bond.atoms
         bond_rows.append({
             "bond_id": f"bond_{i}",
-            "start_atom": source_atom.label,
-            "end_atom": target_atom.label,
+            "start_atom": source_atom.index,
+            "end_atom": target_atom.index,
             "bond_type": str(bond.bond_type),
             "is_conjugated": bond.is_conjugated})
     bond_table = pd.DataFrame(bond_rows)
